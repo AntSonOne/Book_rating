@@ -1,4 +1,5 @@
 const Book = require('../models/book');
+const fs = require('fs');
 
 exports.createBook = (req, res, next) => {
     const bookObject = JSON.parse(req.body.book);
@@ -55,20 +56,23 @@ exports.modifyBook = (req, res, next) => {
 };
 
 exports.deleteBook = (req, res, next) => {
-    Book.deleteOne({ _id: req.params.id }).then(
-        () => {
-            res.status(200).json({
-                message: 'Deleted!'
-            });
-        }
-    ).catch(
-        (error) => {
-            res.status(400).json({
-                error: error
-            });
-        }
-    );
-}
+    Book.findOne({ _id: req.params.id })
+        .then(book => {
+            if (book.userId != req.auth.userId) {
+                res.status(401).json({ message: 'Not authorized' });
+            } else {
+                const filename = book.imageUrl.split('/images/')[1];
+                fs.unlink(`images/${filename}`, () => {
+                    Book.deleteOne({ _id: req.params.id })
+                        .then(() => { res.status(200).json({ message: 'Objet supprimé !' }) })
+                        .catch(error => res.status(401).json({ error }));
+                });
+            }
+        })
+        .catch(error => {
+            res.status(500).json({ error });
+        });
+};
 
 exports.getAllBooks = (req, res, next) => {
     Book.find().then(
@@ -83,3 +87,36 @@ exports.getAllBooks = (req, res, next) => {
         }
     );
 }
+
+exports.rateOneBook = (req, res, next) => {
+    Book.findOne({ _id: req.params.id })
+        .then((book) => {
+            const userId = req.body.userId;
+            const grade = req.body.rating;
+
+            const alreadyRated = book.ratings.some(
+                (rating) => rating.userId === userId
+            );
+            if (alreadyRated) {
+                res.status(400).json({ error: "Vous avez déjà voté." });
+            }
+
+            const newRating = { userId, grade };
+            book.ratings.push(newRating);
+
+            const ratingsCount = book.ratings.length;
+            let sum = 0;
+            for (let i = 0; i < ratingsCount; i++) {
+                sum += book.ratings[i].grade;
+            }
+            book.averageRating = sum / ratingsCount;
+
+            Book.updateOne({ _id: req.params.id }, book).then(() =>
+                res.status(201).json(book)
+            );
+        })
+        .catch((error) => {
+            res.status(400).json({ error });
+        });
+};
+

@@ -91,27 +91,11 @@ exports.getAllBooks = (req, res, next) => {
 
 exports.getBestRatedBooks = (req, res, next) => {
     Book.find()
-        //sort by descending order
         .sort({ averageRating: -1 })
-        //keep the first 3 books (best)
         .limit(3)
-        //return array of 3 best rated books
         .then((bestBooks) => res.status(200).json(bestBooks))
         .catch(error => res.status(400).json({ error }));
 }
-//     Book.find()
-//         .then((books) => {
-//             const topThreeBooks = books
-//                 .sort((a, b) => b.averageRating - a.averageRating)
-//                 .slice(0, 3);
-//             res.status(200).json(topThreeBooks);
-//         })
-//         .catch((error) => {
-//             res.status(400).json({
-//                 error: error,
-//             });
-//         });
-// }
 
 exports.rateOneBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id })

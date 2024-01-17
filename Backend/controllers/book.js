@@ -8,7 +8,6 @@ exports.createBook = (req, res, next) => {
     const book = new Book({
         ...bookObject,
         userId: req.auth.userId,
-        averageRating: 0,
         imageUrl: `${req.protocol}://${req.get('host')}/images/opt_${req.file.filename}`
     });
 

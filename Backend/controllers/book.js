@@ -1,3 +1,4 @@
+const { log } = require('console');
 const Book = require('../models/book');
 const fs = require('fs');
 
@@ -88,6 +89,30 @@ exports.getAllBooks = (req, res, next) => {
     );
 }
 
+exports.getBestRatedBooks = (req, res, next) => {
+    Book.find()
+        //sort by descending order
+        .sort({ averageRating: -1 })
+        //keep the first 3 books (best)
+        .limit(3)
+        //return array of 3 best rated books
+        .then((bestBooks) => res.status(200).json(bestBooks))
+        .catch(error => res.status(400).json({ error }));
+}
+//     Book.find()
+//         .then((books) => {
+//             const topThreeBooks = books
+//                 .sort((a, b) => b.averageRating - a.averageRating)
+//                 .slice(0, 3);
+//             res.status(200).json(topThreeBooks);
+//         })
+//         .catch((error) => {
+//             res.status(400).json({
+//                 error: error,
+//             });
+//         });
+// }
+
 exports.rateOneBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id })
         .then((book) => {
@@ -109,7 +134,7 @@ exports.rateOneBook = (req, res, next) => {
             for (let i = 0; i < ratingsCount; i++) {
                 sum += book.ratings[i].grade;
             }
-            book.averageRating = sum / ratingsCount;
+            book.averageRating = (sum / ratingsCount).toFixed(1)
 
             Book.updateOne({ _id: req.params.id }, book).then(() =>
                 res.status(201).json(book)
